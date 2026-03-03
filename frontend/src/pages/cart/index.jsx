@@ -10,18 +10,18 @@ export function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-r from-black via-gray-800 to-black">
         <Header />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <ShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold mb-4">Seu carrinho está vazio</h1>
-            <p className="text-gray-600 mb-8">
+            <ShoppingBag className="w-24 h-24 text-white mx-auto mb-4" />
+            <h1 className="text-3xl font-bold mb-4 text-white">Seu carrinho está vazio</h1>
+            <p className="text-white mb-8">
               Adicione produtos ao seu carrinho para continuar comprando.
             </p>
             <Link
               to="/"
-              className="inline-block bg-blue-800 text-white px-8 py-3 rounded-lg hover:bg-blue-900 transition-colors"
+              className="inline-block bg-[#39d639] text-black px-8 py-3 rounded-lg hover:bg-[#2bc42b] transition-colors"
             >
               Ver Produtos
             </Link>
