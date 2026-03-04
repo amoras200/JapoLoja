@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Criamos um sub-schema para os endereços, assim o utilizador pode ter vários
 const enderecoSchema = new mongoose.Schema({
     rua: { type: String, required: true },
     numero: { type: String, required: true },
@@ -9,14 +8,11 @@ const enderecoSchema = new mongoose.Schema({
     estado: { type: String, required: true },
     cep: { type: String, required: true },
     complemento: { type: String }
-}, { _id: true }); // O _id: true permite editar ou remover um endereço específico depois
+}, { _id: true }); 
 
 const userSchema = new mongoose.Schema({
-    nome: {
-        type: String,
-        trim: true
-        // Removido o 'required: true'. Só será preenchido mais tarde na Minha Conta ou Checkout
-    },
+    nome: { type: String, trim: true },
+    cpf: { type: String, trim: true },
     email: {
         type: String,
         required: true,
@@ -24,21 +20,14 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         trim: true
     },
-    enderecos: [enderecoSchema], // Agora é um array (lista) de endereços
+    enderecos: [enderecoSchema],
     role: {
         type: String,
         enum: ['cliente', 'admin'],
         default: 'cliente'
     },
-    // ---- Campos temporários para o Login sem Palavra-passe ----
-    codigoLogin: {
-        type: String,
-        select: false // Evita que o código seja exposto acidentalmente ao procurar utilizadores
-    },
-    expiracaoCodigo: {
-        type: Date,
-        select: false
-    }
+    codigoLogin: { type: String, select: false },
+    expiracaoCodigo: { type: Date, select: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
