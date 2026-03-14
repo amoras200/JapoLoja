@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-// Ajuste nos caminhos: subindo dois níveis para alcançar components e hooks
 import { Header } from "../../components/Header";
 import { Footer } from "../../components/Footer";
 import { useCart } from "../../hooks/useCart";
@@ -10,9 +9,9 @@ export function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-black via-gray-800 to-black">
+      <div className="min-h-screen flex flex-col bg-gradient-to-r from-black via-gray-800 to-black">
         <Header />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
           <div className="text-center">
             <ShoppingBag className="w-24 h-24 text-white mx-auto mb-4" />
             <h1 className="text-3xl font-bold mb-4 text-white">Seu carrinho está vazio</h1>
@@ -33,10 +32,10 @@ export function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <h1 className="text-3xl font-bold mb-8">Carrinho de Compras</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
