@@ -1,51 +1,84 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-// Use caminhos relativos para os assets
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import logo from '../../assets/JapoSports.png';
+import { apiAuth } from '../../services/apiAuth'; 
+import { useAuth } from '../../context/AuthContext'; 
 
-export function Login({ onLoginSuccess, onBack }) {
+export function Login() {
     const [step, setStep] = useState('email');
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
+    
+    
+    const [loading, setLoading] = useState(false);
+    const [erro, setErro] = useState('');
 
-    const handleEmailSubmit = (e) => {
+    const { login } = useAuth(); 
+    const navigate = useNavigate(); 
+
+    const handleEmailSubmit = async (e) => {
         e.preventDefault();
-        if (email) {
+        if (!email) return;
+
+        setLoading(true);
+        setErro(''); 
+
+        try {
+           
+            await apiAuth.solicitarCodigo(email);
             setStep('code');
+        } catch (error) {
+            setErro(error.message || 'Erro ao enviar o código. Tente novamente.');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleCodeSubmit = (e) => {
+    const handleCodeSubmit = async (e) => {
         e.preventDefault();
-        if (code) {
-            // Se onLoginSuccess não for passado via props, isso pode dar erro. 
-            // Adicione uma verificação simples:
-            if (onLoginSuccess) onLoginSuccess(email);
-            setStep('email');
-            setEmail('');
-            setCode('');
+        if (!code) return;
+
+        setLoading(true);
+        setErro('');
+
+        try {
+            
+            const dados = await apiAuth.validarCodigo(email, code);
+            
+            
+            login(dados.token, dados.usuario);
+            
+           
+            navigate('/');
+        } catch (error) {
+            setErro(error.message || 'Código inválido ou expirado.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        // MUDANÇA AQUI: De <Login> para <main> ou <div>
         <div className="min-h-screen bg-gradient-to-r from-black via-gray-800 to-black flex items-center justify-center p-4">
-            <button
-                onClick={onBack}
+            <Link
+                to="/"
                 className="absolute top-8 left-8 text-white hover:text-[#39d639] transition-colors flex items-center gap-2"
             >
                 <ArrowLeft size={20} />
-                <span>
-                    <a href="/">
-                        Voltar
-                    </a>
-                </span>
-            </button>
+                <span>Voltar</span>
+            </Link>
 
             <div className="bg-gray-900 rounded-lg border border-gray-950 shadow-xl max-w-md w-full p-8">
                 <div className="flex justify-center mb-8">
                     <img src={logo} alt="JAPO Sports" className="h-14" />
                 </div>
+
+                
+                {erro && (
+                    <div className="bg-red-500/10 border border-red-500 text-red-500 text-sm p-3 rounded-lg mb-4 text-center">
+                        {erro}
+                    </div>
+                )}
 
                 {step === 'email' ? (
                     <div>
@@ -58,22 +91,20 @@ export function Login({ onLoginSuccess, onBack }) {
                                     placeholder="E-mail"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#4a4a4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#39d639] focus:border-transparent text-white placeholder-gray-500"
+                                    disabled={loading}
+                                    className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#4a4a4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#39d639] focus:border-transparent text-white placeholder-gray-500 disabled:opacity-50"
                                     required
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                className="w-full bg-[#39d639] text-white py-3 rounded-lg hover:bg-[#2bc42b] transition-colors uppercase font-medium"
+                                disabled={loading}
+                                className="w-full flex justify-center items-center bg-[#39d639] text-black py-3 rounded-lg hover:bg-[#2bc42b] transition-colors uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Continuar
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Continuar'}
                             </button>
                         </form>
-                        <p className="text-center text-gray-400 text-sm mb-8 mt-4">
-
-                            Faça login ou <a href="/redefinicao" className="text-[#39d639] hover:underline"> atualize seu email </a>
-                        </p>
                     </div>
                 ) : (
                     <div>
@@ -90,7 +121,8 @@ export function Login({ onLoginSuccess, onBack }) {
                                     placeholder="000000"
                                     value={code}
                                     onChange={(e) => setCode(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#4a4a4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#39d639] focus:border-transparent text-white text-center text-2xl tracking-[0.5em] placeholder-gray-600"
+                                    disabled={loading}
+                                    className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#4a4a4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#39d639] focus:border-transparent text-white text-center text-2xl tracking-[0.5em] placeholder-gray-600 disabled:opacity-50"
                                     maxLength={6}
                                     required
                                 />
@@ -98,17 +130,19 @@ export function Login({ onLoginSuccess, onBack }) {
 
                             <button
                                 type="submit"
-                                className="w-full bg-[#39d639] text-white py-3 rounded-lg hover:bg-[#2bc42b] transition-colors uppercase font-medium"
+                                disabled={loading}
+                                className="w-full flex justify-center items-center bg-[#39d639] text-black py-3 rounded-lg hover:bg-[#2bc42b] transition-colors uppercase font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Entrar
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Entrar'}
                             </button>
 
                             <button
                                 type="button"
-                                onClick={() => setStep('email')}
-                                className="w-full text-[#39d639] text-sm hover:underline mt-4"
+                                onClick={() => { setStep('email'); setErro(''); }}
+                                disabled={loading}
+                                className="w-full text-[#39d639] text-sm hover:underline mt-4 disabled:opacity-50"
                             >
-                                Fazer login com outro e-mail
+                                Voltar e corrigir e-mail
                             </button>
                         </form>
                     </div>

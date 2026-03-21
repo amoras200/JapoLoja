@@ -1,12 +1,14 @@
-// src/components/ProductCard.jsx
+import { Link } from 'react-router-dom';
 
-// Vamos receber "produto" como prop para o card ser dinâmico
 export function ProductCard({ produto }) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden group">
-
-      {/* Área da Imagem (com efeito de zoom leve ao passar o mouse) */}
-      <div className="h-80 bg-white/20 bg-gray-100 flex items-center justify-center relative overflow-hidden">
+    // Transformamos a div principal em um Link apontando para a rota que criamos
+    <Link 
+      to={`/produto/${produto._id}`} 
+      className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-2xl shadow-lg hover:shadow-[#39d639]/20 hover:border-[#39d639]/50 transition-all duration-300 cursor-pointer overflow-hidden group block"
+    >
+      {/* Área da Imagem */}
+      <div className="h-80 bg-black flex items-center justify-center relative overflow-hidden">
         {produto.imagem ? (
           <img
             src={produto.imagem}
@@ -14,25 +16,25 @@ export function ProductCard({ produto }) {
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <span className="text-gray-400 font-medium">Sem Imagem</span>
+          <span className="text-gray-600 font-medium">Sem Imagem</span>
         )}
 
-        {/* Botão de "Adicionar Rápido" que aparece só no hover (opcional, mas fica chique) */}
+        {/* Botão de "Ver Detalhes" no hover */}
         <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-full px-4">
-          <button className="w-full bg-black text-white py-2 rounded-lg font-medium text-sm hover:bg-gray-800">
+          <div className="w-full bg-[#39d639] text-black text-center py-2 rounded-lg font-bold uppercase tracking-wider text-sm hover:bg-[#2bc42b]">
             Ver Detalhes
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* Informações do Produto */}
-      <div className="p-4 bg-gray-900">
-        <h3 className="text-lg font-bold text-lime-400 truncate">{produto.nome}</h3>
-        <p className="text-gray-50 text-sm mb-2">{produto.descricao}</p>
-        <p className="text-xl font-semibold text-white">
+      {/* Informações do Produto (já com as cores da nossa identidade) */}
+      <div className="p-4 bg-[#1a1a1a] border-t border-[#3a3a3a]">
+        <h3 className="text-lg font-bold text-white truncate">{produto.nome}</h3>
+        <p className="text-gray-400 text-sm mb-2 truncate">{produto.descricao}</p>
+        <p className="text-xl font-extrabold text-[#39d639]">
           R$ {produto.preco ? produto.preco.toFixed(2).replace('.', ',') : '0,00'}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
