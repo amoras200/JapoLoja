@@ -90,11 +90,12 @@ exports.validarCodigo = async (req, res) => {
 exports.atualizarPerfil = async (req, res) => {
     try {
         const usuarioId = req.usuario.id; 
-        const { nome, enderecos, cpf } = req.body;
+        // Adicionamos o email na desestruturação
+        const { nome, email, enderecos, cpf } = req.body;
 
         const usuarioAtualizado = await User.findByIdAndUpdate(
             usuarioId,
-            { nome, enderecos, cpf },
+            { nome, email, enderecos, cpf }, // Adicionamos o email aqui também
             { new: true, runValidators: true } 
         );
 
