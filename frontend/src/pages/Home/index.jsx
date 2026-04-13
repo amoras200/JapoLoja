@@ -1,37 +1,59 @@
+import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import { ProductCard } from "../../components/ProductCard";
-import { Carousel } from "../../components/Carousel"; // <-- Importamos o carrossel aqui!
+import { Carousel } from "../../components/Carousel";
+import { apiProducts } from "../../services/apiProducts";
 
-
-// Vamos simular alguns produtos "fakes" só para testar o visual
 export default function Home() {
-  const produtosFake = [
-    { _id: 1, nome: "Brasil Jogador", descricao: "Modelo Jogador - primeira linha", preco: 189.90, imagem: null },
-    { _id: 2, nome: "Brasil Torcedor", descricao: "Modelo Torcedor - primeira linha", preco: 119.90, imagem: null },
-    { _id: 3, nome: "Brasil Tailandesa", descricao: "Modelo Tailandesa - primeira linha", preco: 149.90, imagem: null },
-    { _id: 4, nome: "Brasil Retro 2002", descricao: "Edição Limitada", preco: 119.90, imagem: null },
-  ];
+  const [produtos, setProdutos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function carregarProdutos() {
+      try {
+        const dados = await apiProducts.listarTodos();
+        setProdutos(dados);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    carregarProdutos();
+  }, []);
 
   return (
     <Layout>
-
-      {/* SEÇÃO HERO - AGORA COM O CARROSSEL */}
-      <div className="border-b border-gray-800">
-        <Carousel />
-      </div>
-      {/* SEÇÃO DE PRODUTOS */}
-      <div className="bg-gradient-to-r from-black via-gray-800 to-black py-16 px-8 w-full">
-        <div className="flex text-center justify-center items-end mb-12 px-16">
-          <h2 className="text-3xl text-center font-bold text-white uppercase tracking-wide px-18">
+      <Carousel />
+      
+      <div className="bg-gradient-to-r from-black via-gray-800 to-black mx-auto py-16 px-8 w-full">
+        <div className="flex justify-between items-end mb-12">
+            <h2 className="text-3xl font-bold text-white uppercase tracking-wide">
             Destaques
-          </h2>
+            </h2>
+            <a href="/produtos" className="text-gray-500 hover:text-white font-medium underline decoration-gray-300">
+                Ver todos
+            </a>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {produtosFake.map((produto) => (
-            <ProductCard key={produto._id} produto={produto} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-20 text-gray-500 font-medium">
+            Carregando a coleção...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {produtos.length > 0 ? (
+              produtos.map((produto) => (
+                  <ProductCard key={produto._id} produto={produto} />
+              ))
+            ) : (
+              <div className="col-span-full text-center text-gray-500">
+                Ainda não há produtos cadastrados na loja.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   )

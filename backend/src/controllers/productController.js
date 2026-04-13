@@ -2,20 +2,21 @@ const Product = require('../models/Product');
 
 exports.criarProduto = async (req, res) => {
     try {
-        // Pega a URL da imagem que o Cloudinary devolveu
-        const imagemUrl = req.file ? req.file.path : '';
-
-        if (!imagemUrl) {
-            return res.status(400).json({ erro: 'A imagem do produto é obrigatória.' });
+        let imagensUrls = [];
+        if (req.files && req.files.length > 0) {
+            imagensUrls = req.files.map(file => file.path);
         }
 
-        // Transforma o texto do form-data de volta em um Array de Objetos (Variações)
+        if (imagensUrls.length === 0) {
+            return res.status(400).json({ erro: 'Pelo menos uma imagem do produto é obrigatória.' });
+        }
+
         let variacoesFormatadas = [];
         if (req.body.variacoes) {
             try {
                 variacoesFormatadas = JSON.parse(req.body.variacoes);
             } catch (e) {
-                return res.status(400).json({ erro: 'Formato de variações inválido. Envie um JSON válido.' });
+                return res.status(400).json({ erro: 'Formato de variações inválido.' });
             }
         }
 
@@ -25,12 +26,36 @@ exports.criarProduto = async (req, res) => {
             preco: req.body.preco,
             cor: req.body.cor,
             versao: req.body.versao,
-            imagem: imagemUrl,
+            imagens: imagensUrls,
             variacoes: variacoesFormatadas
         });
 
         const produtoSalvo = await novoProduto.save();
         res.status(201).json(produtoSalvo);
+    } catch (erro) {
+        res.status(400).json({ erro: erro.message });
+    }
+};
+
+exports.atualizarProduto = async (req, res) => {
+    try {
+        const dadosAtualizados = { ...req.body };
+
+        if (req.files && req.files.length > 0) {
+            dadosAtualizados.imagens = req.files.map(file => file.path);
+        }
+
+        if (req.body.variacoes) {
+            try {
+                dadosAtualizados.variacoes = JSON.parse(req.body.variacoes);
+            } catch (e) {
+                return res.status(400).json({ erro: 'Formato de variações inválido.' });
+            }
+        }
+
+        const produtoAtualizado = await Product.findByIdAndUpdate(req.params.id, dadosAtualizados, { new: true });
+        if (!produtoAtualizado) return res.status(404).json({ mensagem: 'Produto não encontrado' });
+        res.status(200).json(produtoAtualizado);
     } catch (erro) {
         res.status(400).json({ erro: erro.message });
     }
@@ -55,33 +80,6 @@ exports.buscarProdutoPorId = async (req, res) => {
     }
 };
 
-exports.atualizarProduto = async (req, res) => {
-    try {
-        // Copia os dados que vieram do corpo da requisição
-        const dadosAtualizados = { ...req.body };
-
-        // Se o admin mandou uma imagem nova, atualiza a URL
-        if (req.file) {
-            dadosAtualizados.imagem = req.file.path;
-        }
-
-        // Se o admin mandou novos tamanhos/estoques, formata novamente
-        if (req.body.variacoes) {
-            try {
-                dadosAtualizados.variacoes = JSON.parse(req.body.variacoes);
-            } catch (e) {
-                return res.status(400).json({ erro: 'Formato de variações inválido. Envie um JSON válido.' });
-            }
-        }
-
-        const produtoAtualizado = await Product.findByIdAndUpdate(req.params.id, dadosAtualizados, { new: true });
-        if (!produtoAtualizado) return res.status(404).json({ mensagem: 'Produto não encontrado' });
-        res.status(200).json(produtoAtualizado);
-    } catch (erro) {
-        res.status(400).json({ erro: erro.message });
-    }
-};
-
 exports.deletarProduto = async (req, res) => {
     try {
         const produtoDeletado = await Product.findByIdAndDelete(req.params.id);
@@ -90,4 +88,21 @@ exports.deletarProduto = async (req, res) => {
     } catch (erro) {
         res.status(500).json({ erro: erro.message });
     }
+};
+
+exports.buscarPorTermo = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(200).json([]);
+    const regex = new RegExp(q, 'i');
+    const produtos = await Product.find({
+      $or: [
+        { nome: { $regex: regex } },
+        { descricao: { $regex: regex } }
+      ]
+    });
+    res.status(200).json(produtos);
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro ao realizar a busca' });
+  }
 };

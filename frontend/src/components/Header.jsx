@@ -8,6 +8,7 @@ export function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isShirtsOpen, setIsShirtsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [termoBusca, setTermoBusca] = useState('');
 
   const profileRef = useRef(null);
   const shirtsRef = useRef(null);
@@ -44,6 +45,14 @@ export function Header() {
     navigate('/');
   };
 
+  const handleBusca = (e) => {
+    e.preventDefault();
+    if (termoBusca.trim()) {
+      navigate(`/busca?q=${termoBusca}`);
+      setTermoBusca('');
+    }
+  };
+
   const displayName = user?.nome || (user?.email ? user.email.split('@')[0] : 'Perfil');
 
   return (
@@ -52,14 +61,18 @@ export function Header() {
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-between py-4 gap-4">
             <div className="flex-1 hidden md:block">
-              <div className="relative group max-w-xs">
+              <form onSubmit={handleBusca} className="relative group max-w-xs">
                 <input
                   type="text"
+                  value={termoBusca}
+                  onChange={(e) => setTermoBusca(e.target.value)}
                   placeholder="Buscar na Japo Sports..."
                   className="w-full bg-[#1a1a1a] border border-[#3a3a3a] text-sm text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:border-[#39d639] focus:ring-1 focus:ring-[#39d639] transition-all"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39d639] transition-colors" size={18} />
-              </div>
+                <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39d639] transition-colors hover:text-[#39d639]">
+                  <Search size={18} />
+                </button>
+              </form>
             </div>
 
             <div className="flex items-center justify-center">

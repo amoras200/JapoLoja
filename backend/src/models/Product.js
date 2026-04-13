@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
 
-// Sub-esquema para organizar os tamanhos e seus respectivos estoques
 const variacaoSchema = new mongoose.Schema({
     tamanho: { type: String, required: true },
     estoque: { type: Number, required: true, default: 0 }
-}, { _id: false }); // Desativamos o _id aqui para deixar o banco mais limpo
+}, { _id: false });
 
 const produtoSchema = new mongoose.Schema({
     nome: { type: String, required: true },
@@ -16,8 +15,8 @@ const produtoSchema = new mongoose.Schema({
         enum: ['Tailandesa', 'Jogador', 'Torcedor', 'Outro'], 
         default: 'Outro' 
     },
-    imagem: { type: String, required: true }, // Aqui vai ficar a URL do Cloudinary
-    variacoes: [variacaoSchema] // Lista com os tamanhos e estoques
+    imagens: [{ type: String }], 
+    variacoes: [variacaoSchema] 
 }, { timestamps: true });
 
 module.exports = mongoose.model('Produto', produtoSchema);

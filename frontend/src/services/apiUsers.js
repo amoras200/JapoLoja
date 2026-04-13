@@ -6,5 +6,8 @@ export const apiUsers = {
             method: 'PUT',
             body: JSON.stringify(dados)
         });
+    },
+    listarTodos: async () => {
+        return await apiClient('/usuarios', { method: 'GET' });
     }
 };

@@ -1,36 +1,33 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Header } from '../../components/Header';
 import { Footer } from '../../components/Footer';
 import { ProductCard } from '../../components/ProductCard';
 import { apiProducts } from '../../services/apiProducts';
 
-export function Category() {
-  const { id } = useParams();
+export function Search() {
+  const [searchParams] = useSearchParams();
+  const termo = searchParams.get('q');
+  
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function carregarProdutos() {
+    async function realizarBusca() {
+      if (!termo) return;
+      
       setLoading(true);
       try {
-        const todosProdutos = await apiProducts.listarTodos();
-        const produtosFiltrados = todosProdutos.filter(
-          (p) => p.versao && p.versao.toLowerCase() === id.toLowerCase()
-        );
-        setProdutos(produtosFiltrados);
+        const resultados = await apiProducts.buscarPorTermo(termo);
+        setProdutos(resultados);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     }
-    carregarProdutos();
-  }, [id]);
-
-  const formatarTitulo = (texto) => {
-    return texto.charAt(0).toUpperCase() + texto.slice(1);
-  };
+    realizarBusca();
+  }, [termo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-black via-gray-800 to-black text-white">
@@ -38,19 +35,15 @@ export function Category() {
 
       <main className="flex-1 w-full py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="border-b border-[#3a3a3a] pb-6 mb-12">
-          <p className="text-[#39d639] font-bold tracking-widest uppercase text-sm mb-2">Coleção</p>
-          <h1 className="text-4xl md:text-5xl font-extrabold uppercase tracking-tight">
-            Versão {formatarTitulo(id)}
+          <p className="text-[#39d639] font-bold tracking-widest uppercase text-sm mb-2">Resultados da busca</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+            Você buscou por: "{termo}"
           </h1>
-          <p className="text-gray-400 mt-4 max-w-2xl">
-            Explore nossa seleção exclusiva de camisas da categoria {formatarTitulo(id)}. 
-            Qualidade premium para quem exige o melhor em campo ou na arquibancada.
-          </p>
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-gray-500 font-medium">
-            Carregando a coleção...
+            Procurando no estoque...
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -60,7 +53,7 @@ export function Category() {
               ))
             ) : (
               <div className="col-span-full text-center text-gray-500 py-10 border border-[#3a3a3a] rounded-xl bg-[#1a1a1a]">
-                Nenhum manto encontrado nesta categoria ainda.
+                Nenhum manto encontrado para "{termo}".
               </div>
             )}
           </div>
