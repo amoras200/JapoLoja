@@ -12,9 +12,10 @@ export function Details() {
   const [tamanhoSelecionado, setTamanhoSelecionado] = useState('');
   const [quantidade, setQuantidade] = useState(1);
   const [cep, setCep] = useState('');
-  
-  // Estado para o Popup de Zoom
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Novo estado para controlar qual imagem está aparecendo
+  const [imagemAtiva, setImagemAtiva] = useState(0);
 
   useEffect(() => {
     async function carregarProduto() {
@@ -30,13 +31,10 @@ export function Details() {
     carregarProduto();
   }, [id]);
 
-  const handleDiminuir = () => {
-    if (quantidade > 1) setQuantidade(quantidade - 1);
-  };
-
-  const handleAumentar = () => {
-    setQuantidade(quantidade + 1);
-  };
+  // Sempre que trocar o tamanho, a quantidade volta para 1 por segurança
+  useEffect(() => {
+    setQuantidade(1);
+  }, [tamanhoSelecionado]);
 
   if (loading) {
     return (
@@ -55,6 +53,31 @@ export function Details() {
     );
   }
 
+  // Lógica de Imagens (Tratando array novo ou imagem antiga única)
+  const arrayImagens = produto.imagens && produto.imagens.length > 0 
+    ? produto.imagens 
+    : (produto.imagem ? [produto.imagem] : []);
+  
+  const imagemPrincipal = arrayImagens[imagemAtiva] || null;
+
+  // Lógica de Estoque e Variações
+  const variacoesDisponiveis = produto.variacoes ? produto.variacoes.filter(v => v.estoque > 0) : [];
+  
+  // Pegando a variação que o usuário clicou para saber o limite de estoque
+  const variacaoSelecionada = variacoesDisponiveis.find(v => v.tamanho === tamanhoSelecionado);
+  const estoqueDisponivel = variacaoSelecionada ? variacaoSelecionada.estoque : 0;
+
+  const handleDiminuir = () => {
+    if (quantidade > 1) setQuantidade(quantidade - 1);
+  };
+
+  const handleAumentar = () => {
+    // Só deixa aumentar se a quantidade for menor que o estoque daquele tamanho
+    if (quantidade < estoqueDisponivel) {
+      setQuantidade(quantidade + 1);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-black via-gray-800 to-black text-white">
       <Header />
@@ -67,33 +90,58 @@ export function Details() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           
-          {/* LADO ESQUERDO: IMAGEM COM CLIQUE PARA ZOOM */}
-          <div className="relative group cursor-zoom-in" onClick={() => setIsModalOpen(true)}>
-            <div className="bg-[#1a1a1a] rounded-2xl p-4 md:p-8 flex items-center justify-center border border-[#3a3a3a] shadow-2xl overflow-hidden h-full">
-              {produto.imagem ? (
+          {/* LADO ESQUERDO: GALERIA DE IMAGENS */}
+          <div className="flex flex-col gap-4">
+            {/* Imagem Principal */}
+            <div 
+              className="relative group cursor-zoom-in bg-[#1a1a1a] rounded-2xl p-4 md:p-8 flex items-center justify-center border border-[#3a3a3a] shadow-2xl overflow-hidden h-[400px] md:h-[600px]" 
+              onClick={() => setIsModalOpen(true)}
+            >
+              {imagemPrincipal ? (
                 <>
                   <img 
-                    src={produto.imagem} 
-                    alt={produto.nome} 
-                    className="w-full h-auto max-h-[600px] object-cover rounded-xl transition-transform duration-500 group-hover:scale-105"
+                    src={imagemPrincipal} 
+                    alt={`${produto.nome} - Imagem ${imagemAtiva + 1}`} 
+                    className="w-full h-full object-contain rounded-xl transition-transform duration-500 group-hover:scale-105"
                   />
-                  {/* Ícone indicando que dá pra clicar pra aumentar */}
                   <div className="absolute bottom-6 right-6 bg-black/60 p-3 rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
                     <ZoomIn size={24} className="text-[#39d639]" />
                   </div>
                 </>
               ) : (
-                <div className="w-full h-[500px] flex items-center justify-center text-gray-500">
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
                   Sem imagem disponível
                 </div>
               )}
             </div>
+
+            {/* Miniaturas (Thumbnails) para trocar a imagem */}
+            {arrayImagens.length > 1 && (
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#3a3a3a] scrollbar-track-black">
+                {arrayImagens.map((imgUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setImagemAtiva(index)}
+                    className={`flex-shrink-0 w-24 h-24 rounded-xl border-2 overflow-hidden transition-all duration-200
+                      ${imagemAtiva === index 
+                        ? 'border-[#39d639] opacity-100' 
+                        : 'border-[#3a3a3a] opacity-50 hover:opacity-100'
+                      }`}
+                  >
+                    <img 
+                      src={imgUrl} 
+                      alt={`Miniatura ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* LADO DIREITO: INFORMAÇÕES COMPLETAS (O retorno do que estava antes!) */}
+          {/* LADO DIREITO: INFORMAÇÕES DO PRODUTO */}
           <div className="flex flex-col justify-center">
             
-            {/* Título e Preço */}
             <div className="mb-8 border-b border-[#3a3a3a] pb-6">
               <div className="flex items-center gap-2 text-[#39d639] mb-3">
                 {[...Array(5)].map((_, i) => <Star key={i} size={16} fill="#39d639" />)}
@@ -108,7 +156,6 @@ export function Details() {
               )}
             </div>
 
-            {/* Descrição */}
             <div className="mb-8">
               <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-2">Descrição</h3>
               <p className="text-gray-300 leading-relaxed text-sm md:text-base">
@@ -116,46 +163,70 @@ export function Details() {
               </p>
             </div>
 
-            {/* Seleção de Tamanho */}
             <div className="mb-8">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Tamanho</h3>
                 <button className="text-xs text-[#39d639] hover:underline">Guia de Medidas</button>
               </div>
-              <div className="flex flex-wrap gap-3">
-                {(produto.tamanhos || ['P', 'M', 'G', 'GG', 'XG']).map((tamanho) => (
-                  <button
-                    key={tamanho}
-                    onClick={() => setTamanhoSelecionado(tamanho)}
-                    className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center font-bold text-lg transition-all
-                      ${tamanhoSelecionado === tamanho 
-                        ? 'border-[#39d639] bg-[#39d639]/10 text-[#39d639]' 
-                        : 'border-[#3a3a3a] bg-[#1a1a1a] text-gray-300 hover:border-gray-500'
-                      }`}
-                  >
-                    {tamanho}
-                  </button>
-                ))}
-              </div>
-              {!tamanhoSelecionado && <p className="text-red-400 text-xs mt-2">* Selecione um tamanho para continuar</p>}
+              
+              {variacoesDisponiveis.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {variacoesDisponiveis.map((variacao) => (
+                    <button
+                      key={variacao.tamanho}
+                      onClick={() => setTamanhoSelecionado(variacao.tamanho)}
+                      className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center font-bold text-lg transition-all
+                        ${tamanhoSelecionado === variacao.tamanho 
+                          ? 'border-[#39d639] bg-[#39d639]/10 text-[#39d639]' 
+                          : 'border-[#3a3a3a] bg-[#1a1a1a] text-gray-300 hover:border-gray-500'
+                        }`}
+                    >
+                      {variacao.tamanho.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg font-bold text-sm text-center w-full">
+                  Sem estoque no momento
+                </div>
+              )}
+              
+              {!tamanhoSelecionado && variacoesDisponiveis.length > 0 && (
+                <p className="text-red-400 text-xs mt-2">* Selecione um tamanho para continuar</p>
+              )}
             </div>
 
-            {/* Ações: Quantidade e Botão Comprar */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              {/* Controle de Quantidade */}
-              <div className="flex items-center justify-between bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-2 w-full sm:w-32 h-14">
-                <button onClick={handleDiminuir} className="p-2 text-gray-400 hover:text-white transition-colors">
-                  <Minus size={20} />
-                </button>
-                <span className="font-bold text-lg">{quantidade}</span>
-                <button onClick={handleAumentar} className="p-2 text-gray-400 hover:text-white transition-colors">
-                  <Plus size={20} />
-                </button>
+              
+              {/* Controle de Quantidade Integrado ao Estoque */}
+              <div className="flex flex-col gap-1 w-full sm:w-32">
+                <div className="flex items-center justify-between bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-2 h-14">
+                  <button 
+                    onClick={handleDiminuir} 
+                    disabled={quantidade <= 1}
+                    className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Minus size={20} />
+                  </button>
+                  <span className="font-bold text-lg">{quantidade}</span>
+                  <button 
+                    onClick={handleAumentar} 
+                    disabled={!tamanhoSelecionado || quantidade >= estoqueDisponivel}
+                    className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+                {/* Mostra a quantidade disponível em estoque abaixo dos botões se tiver um tamanho selecionado */}
+                {tamanhoSelecionado && (
+                  <span className="text-xs text-gray-500 text-center font-medium">
+                    {estoqueDisponivel} em estoque
+                  </span>
+                )}
               </div>
 
-              {/* Botão Adicionar */}
               <button 
-                disabled={!tamanhoSelecionado}
+                disabled={!tamanhoSelecionado || variacoesDisponiveis.length === 0}
                 className="flex-1 h-14 bg-[#39d639] text-black font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-3 hover:bg-[#2bc42b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#39d639]/20"
               >
                 <ShoppingCart size={24} />
@@ -163,7 +234,6 @@ export function Details() {
               </button>
             </div>
 
-            {/* Cálculo de Frete */}
             <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-xl p-4 md:p-6 mb-6">
               <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">
                 <Truck size={18} />
@@ -183,7 +253,6 @@ export function Details() {
               </div>
             </div>
 
-            {/* Garantias */}
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <ShieldCheck size={18} className="text-[#39d639]" />
               <span>Compra 100% segura via JAPO Sports.</span>
@@ -194,12 +263,11 @@ export function Details() {
       </main>
 
       {/* POPUP DE ZOOM (MODAL) */}
-      {isModalOpen && produto.imagem && (
+      {isModalOpen && imagemPrincipal && (
         <div 
           className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 cursor-zoom-out"
           onClick={() => setIsModalOpen(false)}
         >
-          {/* Botão Fechar */}
           <button 
             className="absolute top-6 right-6 text-white hover:text-[#39d639] transition-colors"
             onClick={() => setIsModalOpen(false)}
@@ -207,10 +275,9 @@ export function Details() {
             <X size={40} />
           </button>
 
-          {/* Imagem em Tamanho Ouro */}
           <img 
-            src={produto.imagem} 
-            alt={produto.nome} 
+            src={imagemPrincipal} 
+            alt={`${produto.nome} em Zoom`} 
             className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in duration-300"
           />
         </div>

@@ -14,23 +14,26 @@ import {
   DollarSign,
   TrendingUp,
   Edit,
-  Trash2
+  Trash2,
+  Store // O ícone para o botão de voltar à loja
 } from 'lucide-react';
 
-// Importando os serviços de API
 import { apiProducts } from '../../services/apiProducts';
 import { apiOrders } from '../../services/apiOrders';
 import { apiUsers } from '../../services/apiUsers';
+import { ProductModal } from '../../components/Admin/ProductModal';
 
 export function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   
-  // Controle de Interface
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  // NOVO: Estado para saber qual produto estamos editando
+  const [produtoEditando, setProdutoEditando] = useState(null);
 
-  // Estados para os Dados do Banco
   const [dados, setDados] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +42,6 @@ export function Dashboard() {
     navigate('/');
   };
 
-  // Efeito que roda toda vez que você troca de Aba
   useEffect(() => {
     async function carregarDados() {
       if (activeTab === 'dashboard' || activeTab === 'estoque' || activeTab === 'relatorios') return;
@@ -66,11 +68,9 @@ export function Dashboard() {
     carregarDados();
   }, [activeTab]);
 
-  // Função para mudar status do pedido
   const handleMudarStatus = async (id, novoStatus) => {
     try {
       await apiOrders.atualizarStatus(id, novoStatus);
-      // Recarrega a lista para mostrar a mudança
       const res = await apiOrders.listarTodos();
       setDados(res);
       alert("Status atualizado com sucesso!");
@@ -84,7 +84,6 @@ export function Dashboard() {
     if (window.confirm("Tem certeza que deseja deletar este manto permanentemente?")) {
       try {
         await apiProducts.deletar(id);
-        // Recarrega a lista após deletar
         const res = await apiProducts.listarTodos();
         setDados(res);
         alert("Produto deletado com sucesso!");
@@ -93,6 +92,18 @@ export function Dashboard() {
         console.error(err);
       }
     }
+  };
+
+  // Função para abrir o modal no modo de Edição
+  const handleEditarProduto = (produto) => {
+    setProdutoEditando(produto);
+    setIsModalOpen(true);
+  };
+
+  // Função para abrir o modal no modo de Criação
+  const handleNovoProduto = () => {
+    setProdutoEditando(null); // Garante que o modal vai abrir zerado
+    setIsModalOpen(true);
   };
 
   const menuItems = [
@@ -107,7 +118,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-black text-white flex overflow-hidden font-sans">
       
-      {/* MENU LATERAL (SIDEBAR) */}
+      {/* MENU LATERAL */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] border-r border-[#3a3a3a] transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
@@ -141,18 +152,25 @@ export function Dashboard() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#3a3a3a]">
+        <div className="p-4 border-t border-[#3a3a3a] space-y-2">
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-[#2a2a2a] hover:text-[#39d639] rounded-lg transition-colors font-medium"
+          >
+            <Store size={20} />
+            Ir para a Loja
+          </button>
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors font-medium"
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-500/70 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors text-sm font-medium"
           >
-            <LogOut size={20} />
-            Sair do Painel
+            <LogOut size={16} />
+            Deslogar da Conta
           </button>
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL DE CONTEÚDO */}
+      {/* ÁREA PRINCIPAL */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#0a0a0a]">
         
         {/* Topbar */}
@@ -197,7 +215,6 @@ export function Dashboard() {
                     <TrendingUp size={14} /> +0% referente a ontem
                   </p>
                 </div>
-                {/* ... (Outros cards do Dashboard mantidos iguais ao seu layout) ... */}
                 <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-xl p-6 shadow-lg">
                   <div className="flex justify-between items-start">
                     <div>
@@ -213,7 +230,6 @@ export function Dashboard() {
             </div>
           )}
 
-          {/* ESTADO DE CARREGAMENTO */}
           {loading && activeTab !== 'dashboard' && (
              <div className="flex justify-center items-center py-20">
                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#39d639]"></div>
@@ -225,7 +241,10 @@ export function Dashboard() {
             <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-xl overflow-hidden animate-in fade-in duration-500">
               <div className="p-6 border-b border-[#3a3a3a] flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h2 className="text-xl font-bold">Gerenciar Mantos</h2>
-                <button className="bg-[#39d639] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#2bc42b] transition-colors w-full sm:w-auto">
+                <button 
+                  onClick={handleNovoProduto} // <-- Mudou aqui para usar a nova função
+                  className="bg-[#39d639] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#2bc42b] transition-colors w-full sm:w-auto"
+                >
                   + Novo Produto
                 </button>
               </div>
@@ -246,15 +265,24 @@ export function Dashboard() {
                       dados.map(prod => (
                         <tr key={prod._id} className="hover:bg-[#252525] transition-colors">
                           <td className="p-4 flex items-center gap-3 min-w-[200px]">
-                            {/* Mostra a primeira imagem do array ou a imagem antiga */}
                             <img src={prod.imagens?.[0] || prod.imagem || 'https://via.placeholder.com/40'} alt={prod.nome} className="w-12 h-12 rounded object-cover border border-[#3a3a3a]" />
                             <span className="font-medium text-white">{prod.nome}</span>
                           </td>
                           <td className="p-4 text-gray-400">{prod.versao}</td>
                           <td className="p-4 text-[#39d639] font-bold whitespace-nowrap">R$ {prod.preco?.toFixed(2)}</td>
-                          <td className="p-4 text-center">
-                            <button className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors inline-flex items-center justify-center">
+                          <td className="p-4 text-center flex items-center justify-center gap-2">
+                            {/* BOTÃO DE EDITAR CONECTADO AQUI */}
+                            <button 
+                              onClick={() => handleEditarProduto(prod)}
+                              className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors inline-flex items-center justify-center"
+                            >
                               <Edit size={18} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeletarProduto(prod._id)}
+                              className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={18} />
                             </button>
                           </td>
                         </tr>
@@ -361,21 +389,20 @@ export function Dashboard() {
              </div>
           )}
 
-          {/* ABAS EM CONSTRUÇÃO */}
-          {!loading && (activeTab === 'estoque' || activeTab === 'relatorios') && (
-            <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-xl p-8 text-center animate-in fade-in duration-500">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#2a2a2a] text-[#39d639] mb-4">
-                {menuItems.find(i => i.id === activeTab)?.icon}
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2 capitalize">Gerenciar {activeTab}</h2>
-              <p className="text-gray-400 max-w-md mx-auto">
-                A tela de {activeTab} está em construção.
-              </p>
-            </div>
-          )}
-
         </div>
       </main>
+
+      {/* MODAL CONECTADO RECEBENDO O PRODUTO EDITANDO */}
+      <ProductModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        produtoEditando={produtoEditando} // Passando os dados para preencher o formulário
+        onSuccess={async () => {
+          const res = await apiProducts.listarTodos();
+          setDados(res);
+        }}
+      />
+
     </div>
   );
 }
