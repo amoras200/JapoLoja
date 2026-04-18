@@ -90,12 +90,11 @@ exports.validarCodigo = async (req, res) => {
 exports.atualizarPerfil = async (req, res) => {
     try {
         const usuarioId = req.usuario.id; 
-        // Adicionamos o email na desestruturação
         const { nome, email, enderecos, cpf } = req.body;
 
         const usuarioAtualizado = await User.findByIdAndUpdate(
             usuarioId,
-            { nome, email, enderecos, cpf }, // Adicionamos o email aqui também
+            { nome, email, enderecos, cpf },
             { new: true, runValidators: true } 
         );
 
@@ -105,5 +104,16 @@ exports.atualizarPerfil = async (req, res) => {
         });
     } catch (erro) {
         res.status(500).json({ erro: 'Erro ao atualizar perfil: ' + erro.message });
+    }
+};
+
+// NOVA FUNÇÃO PARA O PAINEL ADMIN:
+exports.listarUsuarios = async (req, res) => {
+    try {
+        // Busca todos os usuários, mas omite os códigos de segurança do retorno
+        const usuarios = await User.find().select('-codigoLogin -expiracaoCodigo');
+        res.status(200).json(usuarios);
+    } catch (erro) {
+        res.status(500).json({ erro: 'Erro ao listar usuários: ' + erro.message });
     }
 };

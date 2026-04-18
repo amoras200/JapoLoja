@@ -1,17 +1,28 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { calcularPrecoPrazo } = require('correios-brasil');
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
 
 exports.calcularFrete = async (req, res) => {
     try {
         const { cepDestino } = req.body;
         let args = {
-            sCepOrigem: '01001000', // Troque pelo CEP de onde as camisas vão sair
+            sCepOrigem: '01001000',
             sCepDestino: cepDestino,
-            nVlPeso: '0.3', // 300g (peso médio da camisa)
+            nVlPeso: '0.3',
             nCdFormato: '1', 
-            nVlComprimento: '20', nVlAltura: '10', nVlLargura: '15',
-            nCdServico: ['04510', '04014'], // PAC e SEDEX
+            nVlComprimento: '20', 
+            nVlAltura: '10', 
+            nVlLargura: '15',
+            nCdServico: ['04510', '04014'],
             nVlDiametro: '0',
         };
         const result = await calcularPrecoPrazo(args);
@@ -72,7 +83,6 @@ exports.cancelarMeuPedido = async (req, res) => {
         pedido.status = 'cancelado';
         await pedido.save();
 
-        // Devolve o estoque para a loja
         for (let item of pedido.produtos) {
             await Product.findOneAndUpdate(
                 { _id: item.produto, "variacoes.tamanho": item.tamanho },
@@ -88,7 +98,8 @@ exports.cancelarMeuPedido = async (req, res) => {
 exports.enviarPedido = async (req, res) => {
     try {
         const { codigoRastreio } = req.body;
-        const pedido = await Order.findById(req.params.id);
+        const pedido = await Order.findById(req.params.id).populate('usuario', 'nome email');
+        
         if (!pedido) return res.status(404).json({ mensagem: 'Pedido não encontrado' });
         if (pedido.status !== 'pago') return res.status(400).json({ mensagem: 'Apenas pedidos PAGOS podem ser enviados' });
 
@@ -96,7 +107,24 @@ exports.enviarPedido = async (req, res) => {
         pedido.codigoRastreio = codigoRastreio;
         await pedido.save();
 
-        res.status(200).json({ mensagem: 'Pedido marcado como enviado!', pedido });
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: pedido.usuario.email,
+            subject: 'Seu Manto foi Enviado! 🚀 - JAPO Sports',
+            html: `
+                <h2>Olá, ${pedido.usuario.nome}!</h2>
+                <p>Ótimas notícias! O seu pedido <strong>${pedido.codigoPedido || pedido._id}</strong> acabou de ser enviado.</p>
+                <p>Você pode acompanhar a entrega usando o código de rastreio abaixo:</p>
+                <h3 style="background: #eee; padding: 10px; display: inline-block;">${codigoRastreio}</h3>
+                <p>Obrigado por comprar com a JAPO Sports!</p>
+            `
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) console.log(error);
+        });
+
+        res.status(200).json({ mensagem: 'Pedido marcado como enviado e e-mail disparado!', pedido });
     } catch (erro) {
         res.status(500).json({ erro: erro.message });
     }
